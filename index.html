@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AMB Store</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
+:root{
+  --bg:#0D0D12;--bg2:#13131A;--card:#1A1A24;--card2:#20202C;
+  --blue:#3B7FFF;--gold:#F5C518;--green:#00C853;--red:#FF3D3D;
+  --text:#FFFFFF;--text2:#8888AA;--border:rgba(255,255,255,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.logo{font-size:20px;font-weight:900;}
+.logo span{color:var(--blue);}
+.balance-pill{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:6px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;}
+.balance-amount{font-size:14px;font-weight:800;color:var(--gold);}
+.balance-label{font-size:11px;color:var(--text2);}
+.add-btn{background:var(--green);color:#000;border:none;border-radius:8px;padding:4px 10px;font-family:'Tajawal',sans-serif;font-size:11px;font-weight:800;cursor:pointer;}
+
+.user-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;}
+.user-id{font-size:12px;color:var(--text2);}
+.user-id span{color:var(--blue);font-weight:700;}
+
+.search-wrap{margin:12px 16px 0;}
+.search-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;}
+.search-box input{background:none;border:none;color:var(--text);font-family:'Tajawal',sans-serif;font-size:14px;outline:none;flex:1;text-align:right;}
+.search-box input::placeholder{color:var(--text2);}
+
+.banner{margin:12px 16px 0;border-radius:16px;overflow:hidden;height:110px;background:linear-gradient(135deg,#1a2a4a,#0d1520);display:flex;align-items:center;padding:16px;gap:12px;}
+.banner-text .banner-title{font-size:17px;font-weight:900;}
+.banner-text .banner-sub{font-size:11px;color:var(--text2);margin-top:4px;}
+.banner-badge{background:var(--blue);color:#fff;font-size:10px;font-weight:800;padding:4px 10px;border-radius:20px;white-space:nowrap;}
+
+.section{margin:14px 16px 0;}
+.section-title{font-size:15px;font-weight:800;margin-bottom:10px;}
+
+.cats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.cat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:10px 6px;text-align:center;cursor:pointer;transition:all 0.2s;}
+.cat-card:active{transform:scale(0.95);}
+.cat-card.active{border-color:var(--blue);background:rgba(59,127,255,0.1);}
+.cat-img{width:44px;height:44px;border-radius:10px;object-fit:cover;margin:0 auto 6px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:24px;}
+.cat-img img{width:44px;height:44px;border-radius:10px;object-fit:cover;}
+.cat-name{font-size:10px;font-weight:700;color:var(--text2);}
+.cat-card.active .cat-name{color:var(--blue);}
+
+.products-grid{display:flex;flex-direction:column;gap:8px;}
+.product-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.2s;}
+.product-card:active{transform:scale(0.98);}
+.product-img{width:54px;height:54px;border-radius:12px;object-fit:cover;flex-shrink:0;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;}
+.product-img img{width:54px;height:54px;object-fit:cover;}
+.product-info{flex:1;}
+.product-name{font-size:14px;font-weight:800;margin-bottom:3px;}
+.product-desc{font-size:11px;color:var(--text2);}
+.product-price{text-align:left;flex-shrink:0;}
+.price-from{font-size:9px;color:var(--text2);}
+.price-amount{font-size:15px;font-weight:900;color:var(--gold);}
+
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);display:flex;padding:8px 0 16px;z-index:100;}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+.nav-icon{font-size:20px;}
+.nav-label{font-size:10px;font-weight:600;color:var(--text2);}
+.nav-item.active .nav-label{color:var(--blue);}
+.nav-item.active .nav-icon{transform:scale(1.1);}
+
+.page{display:none;padding-bottom:90px;}.page.active{display:block;}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;align-items:flex-end;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:var(--bg2);border-radius:24px 24px 0 0;padding:20px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto;position:relative;}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:10px;margin:0 auto 14px;}
+.modal-title{font-size:17px;font-weight:900;margin-bottom:3px;}
+.modal-sub{font-size:12px;color:var(--text2);margin-bottom:16px;}
+.btn-close{position:absolute;top:16px;left:16px;background:var(--card);border:none;border-radius:50%;width:30px;height:30px;color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+.product-detail-img{width:100%;height:150px;border-radius:14px;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:60px;margin-bottom:14px;overflow:hidden;}
+.product-detail-img img{width:100%;height:100%;object-fit:cover;}
+
+.packages-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.package-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.2s;}
+.package-item:active{transform:scale(0.98);}
+.package-item.selected{border-color:var(--blue);background:rgba(59,127,255,0.1);}
+.package-name{font-size:14px;font-weight:700;}
+.package-price{font-size:15px;font-weight:900;color:var(--gold);}
+
+.input-field{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;}
+.input-label{font-size:12px;color:var(--text2);margin-bottom:6px;}
+.input-field input{background:none;border:none;color:var(--text);font-family:'Tajawal',sans-serif;font-size:14px;outline:none;width:100%;}
+.input-field input::placeholder{color:var(--text2);}
+
+.charge-method{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:10px;border-color:var(--green);background:rgba(0,200,83,0.08);}
+.method-icon-big{font-size:30px;}
+.method-info .method-name-big{font-size:15px;font-weight:800;}
+.method-info .method-desc{font-size:11px;color:var(--text2);margin-top:2px;}
+
+.charge-details{background:var(--card);border:1px solid rgba(0,200,83,0.2);border-radius:14px;padding:14px;margin-bottom:12px;}
+.charge-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.charge-row:last-child{border-bottom:none;}
+.charge-key{font-size:12px;color:var(--text2);}
+.charge-val{font-size:13px;font-weight:700;}
+.copy-val{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-family:'Tajawal',sans-serif;font-size:11px;font-weight:700;cursor:pointer;}
+
+.btn-primary{width:100%;background:linear-gradient(135deg,var(--blue),#2860CC);color:#fff;border:none;border-radius:14px;padding:14px;font-family:'Tajawal',sans-serif;font-size:15px;font-weight:800;cursor:pointer;transition:all 0.2s;margin-bottom:8px;}
+.btn-primary:active{transform:scale(0.98);}
+.btn-primary:disabled{opacity:0.5;pointer-events:none;}
+.btn-secondary{width:100%;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:13px;font-family:'Tajawal',sans-serif;font-size:14px;font-weight:700;cursor:pointer;}
+
+.order-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;}
+.order-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.order-id{font-size:11px;color:var(--text2);}
+.order-status{font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;}
+.status-pending{background:rgba(245,197,24,0.15);color:var(--gold);}
+.status-done{background:rgba(0,200,83,0.15);color:var(--green);}
+.status-cancelled{background:rgba(255,61,61,0.15);color:var(--red);}
+
+.deposit-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;}
+.deposit-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.deposit-amount{font-size:18px;font-weight:900;color:var(--green);}
+.deposit-status{font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;}
+
+.toast{position:fixed;top:75px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--green);color:#000;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:800;opacity:0;transition:all 0.3s;z-index:999;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text2);}
+.empty-icon{font-size:44px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">AMB<span>Store</span></div>
+  <div class="balance-pill" onclick="showCharge()">
+    <div>
+      <div class="balance-amount">$<span id="balanceAmt">0.00</span></div>
+      <div class="balance-label">رصيدك</div>
+    </div>
+    <button class="add-btn">+ شحن</button>
+  </div>
+</div>
+
+<!-- User Bar -->
+<div class="user-bar">
+  <div class="user-id">🆔 <span id="userId">—</span></div>
+  <div style="font-size:11px;color:var(--text2);" id="userName">—</div>
+</div>
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="search-wrap">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" placeholder="ابحث عن منتج..." id="searchInput" oninput="searchProducts()">
+    </div>
+  </div>
+
+  <div class="banner">
+    <div style="font-size:48px;">🛒</div>
+    <div class="banner-text">
+      <div class="banner-title">AMB Store</div>
+      <div class="banner-sub">شحن ألعاب • أرقام واتساب • خدمات رقمية</div>
+    </div>
+    <div class="banner-badge">⚡ فوري</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📂 الأقسام</div>
+    <div class="cats-grid" id="catsGrid"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title" id="productsTitle">🔥 جميع المنتجات</div>
+    <div class="products-grid" id="productsGrid"></div>
+  </div>
+</div>
+
+<!-- ORDERS -->
+<div class="page" id="page-orders">
+  <div class="section" style="margin-top:14px;">
+    <div class="section-title">📦 طلباتي</div>
+    <div id="ordersList"></div>
+  </div>
+</div>
+
+<!-- DEPOSITS -->
+<div class="page" id="page-deposits">
+  <div class="section" style="margin-top:14px;">
+    <div class="section-title">💳 كشف الإيداعات</div>
+    <div id="depositsList"></div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div class="page" id="page-profile">
+  <div class="section" style="margin-top:14px;">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;text-align:center;margin-bottom:12px;">
+      <div style="font-size:48px;margin-bottom:8px;">👤</div>
+      <div style="font-size:18px;font-weight:900;" id="profileName">—</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:3px;" id="profileId">—</div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+        <div style="font-size:28px;font-weight:900;color:var(--gold);">$<span id="profileBalance">0.00</span></div>
+        <div style="font-size:11px;color:var(--text2);">رصيدك الحالي</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="showCharge()">💳 شحن الرصيد</button>
+    <button class="btn-secondary" onclick="contactSupport()">💬 تواصل مع الدعم</button>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="showPage('home')" id="nav-home"><div class="nav-icon">🏠</div><div class="nav-label">الرئيسية</div></div>
+  <div class="nav-item" onclick="showPage('orders')" id="nav-orders"><div class="nav-icon">📦</div><div class="nav-label">طلباتي</div></div>
+  <div class="nav-item" onclick="showCharge()" id="nav-charge"><div class="nav-icon">💳</div><div class="nav-label">شحن</div></div>
+  <div class="nav-item" onclick="showPage('deposits')" id="nav-deposits"><div class="nav-icon">📊</div><div class="nav-label">إيداعاتي</div></div>
+  <div class="nav-item" onclick="showPage('profile')" id="nav-profile"><div class="nav-icon">👤</div><div class="nav-label">حسابي</div></div>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal-box">
+    <button class="btn-close" onclick="closeModal('productModal')">✕</button>
+    <div class="modal-handle"></div>
+    <div class="product-detail-img" id="modalImg"></div>
+    <div class="modal-title" id="modalName">—</div>
+    <div class="modal-sub" id="modalDesc">—</div>
+    <div class="packages-list" id="packagesList"></div>
+    <div id="inputFields"></div>
+    <button class="btn-primary" onclick="placeOrder()">🛒 اطلب الآن</button>
+  </div>
+</div>
+
+<!-- SENDER INFO MODAL -->
+<div class="modal-overlay" id="senderModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📋 بيانات المحوّل</div>
+    <div class="modal-sub">يجب أن يكون التحويل من حسابك الشخصي فقط</div>
+    <div style="background:rgba(255,61,61,0.08);border:1px solid rgba(255,61,61,0.2);border-radius:10px;padding:10px;margin-bottom:14px;font-size:12px;color:var(--text2);">
+      ⚠️ لا يُسمح باستخدام حسابات الغير — سيتم التحقق من البيانات
+    </div>
+    <div class="input-field">
+      <div class="input-label">الاسم على شام كاش *</div>
+      <input type="text" id="senderName" placeholder="اسمك كما يظهر في شام كاش">
+    </div>
+    <div class="input-field">
+      <div class="input-label">رقم هاتف شام كاش *</div>
+      <input type="tel" id="senderPhone" placeholder="09XXXXXXXX" style="direction:ltr;">
+    </div>
+    <button class="btn-primary" onclick="submitSenderInfo()">✅ تأكيد والمتابعة</button>
+    <button class="btn-secondary" onclick="closeModal('senderModal')">إلغاء</button>
+  </div>
+</div>
+
+<!-- CHARGE CHOICE MODAL -->
+<div class="modal-overlay" id="chargeModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💳 شحن الرصيد</div>
+    <div class="modal-sub">اختر طريقة الدفع</div>
+    <button class="btn-primary" onclick="openChargeUSD()" style="margin-bottom:10px;">
+      💵 شحن بالدولار USD
+    </button>
+    <button class="btn-primary" onclick="openChargeSYP()" style="background:linear-gradient(135deg,#2d8a4e,#1a5e35);margin-bottom:10px;">
+      💴 شحن بالليرة السورية
+    </button>
+    <button class="btn-secondary" onclick="closeModal('chargeModal')">إلغاء</button>
+  </div>
+</div>
+
+<!-- USD CHARGE MODAL -->
+<div class="modal-overlay" id="chargeUSDModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💵 شحن بالدولار</div>
+    <div class="modal-sub">شام كاش — تحويل فوري</div>
+    <div class="input-field" style="margin-bottom:12px;">
+      <div class="input-label">المبلغ بالدولار</div>
+      <input type="number" id="chargeAmountUSD" placeholder="مثال: 5" min="1" step="0.5">
+    </div>
+    <div id="chargeDetailsUSD" style="display:none;">
+      <div class="charge-details">
+        <div class="charge-row">
+          <span class="charge-key">1️⃣ افتح شام كاش</span><span></span>
+        </div>
+        <div class="charge-row">
+          <span class="charge-key">2️⃣ حول إلى</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="charge-val" style="font-size:11px;direction:ltr;">8940269bc88c8dbf09425b45917ec4c5</span>
+            <button class="copy-val" onclick="copyText('8940269bc88c8dbf09425b45917ec4c5')">نسخ</button>
+          </div>
+        </div>
+        <div class="charge-row">
+          <span class="charge-key">3️⃣ المبلغ</span>
+          <span class="charge-val" id="chargeAmtUSDDisplay">$0</span>
+        </div>
+        <div class="charge-row">
+          <span class="charge-key">4️⃣ الملاحظة</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="charge-val" id="chargeNoteUSDDisplay" style="direction:ltr;color:var(--blue);font-size:10px;">—</span>
+            <button class="copy-val" onclick="copyText(document.getElementById('chargeNoteUSDDisplay').textContent)">نسخ</button>
+          </div>
+        </div>
+        <div class="charge-row">
+          <span class="charge-key">⚠️ مهم</span>
+          <span style="font-size:11px;color:var(--red);">الملاحظة إلزامية!</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:12px;">
+        ⏱ <span id="chargeTimerUSD" style="color:var(--red);font-weight:800;">29:59</span>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="processChargeUSD()" id="chargeBtnUSD">🧾 أنشئ فاتورة</button>
+    <button class="btn-secondary" onclick="closeModal('chargeUSDModal');showCharge()">🔙 رجوع</button>
+  </div>
+</div>
+
+<!-- SYP CHARGE MODAL -->
+<div class="modal-overlay" id="chargeSYPModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💴 شحن بالليرة السورية</div>
+    <div class="modal-sub">شام كاش — تحويل فوري</div>
+    <div id="exchangeInfoSYP" style="background:rgba(59,127,255,0.1);border:1px solid var(--blue);border-radius:10px;padding:10px;margin-bottom:10px;font-size:13px;text-align:center;">
+      💱 سعر الصرف: <span id="exchangeRateSYP">—</span> ل.س = $1
+    </div>
+    <div class="input-field" style="margin-bottom:8px;">
+      <div class="input-label">المبلغ بالليرة السورية</div>
+      <input type="number" id="chargeAmountSYP" placeholder="مثال: 1300" min="1" step="1" oninput="calcSYP()">
+    </div>
+
+    <!-- حاسبة مباشرة -->
+    <div id="calcResult" style="display:none;background:rgba(0,200,83,0.08);border:1px solid rgba(0,200,83,0.3);border-radius:12px;padding:12px;margin-bottom:10px;text-align:center;">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:4px;">💰 سيُضاف إلى رصيدك</div>
+      <div style="font-size:26px;font-weight:900;color:var(--green);" id="calcResultUSD">$0.00</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px;">⚠️ يُضاف بالدولار حتى لو أودعت بالليرة السورية</div>
+    </div>
+    <div id="chargeDetailsSYP" style="display:none;">
+      <div class="charge-details">
+        <div class="charge-row">
+          <span class="charge-key">1️⃣ افتح شام كاش</span><span></span>
+        </div>
+        <div class="charge-row">
+          <span class="charge-key">2️⃣ حول إلى</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="charge-val" style="font-size:11px;direction:ltr;">8940269bc88c8dbf09425b45917ec4c5</span>
+            <button class="copy-val" onclick="copyText('8940269bc88c8dbf09425b45917ec4c5')">نسخ</button>
+          </div>
+        </div>
+        <div class="charge-row">
+          <span class="charge-key">3️⃣ المبلغ</span>
+          <span class="charge-val" id="chargeAmtSYPDisplay">0 ل.س</span>
+        </div>
+        <div class="charge-row">
+          <span class="charge-key">💰 يعادل</span>
+          <span class="charge-val" id="chargeAmtUSDEquiv" style="color:var(--green);">$0</span>
+        </div>
+        <div class="charge-row">
+          <span class="charge-key">4️⃣ الملاحظة</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="charge-val" id="chargeNoteSYPDisplay" style="direction:ltr;color:var(--blue);font-size:10px;">—</span>
+            <button class="copy-val" onclick="copyText(document.getElementById('chargeNoteSYPDisplay').textContent)">نسخ</button>
+          </div>
+        </div>
+        <div class="charge-row">
+          <span class="charge-key">⚠️ مهم</span>
+          <span style="font-size:11px;color:var(--red);">الملاحظة إلزامية!</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:12px;">
+        ⏱ <span id="chargeTimerSYP" style="color:var(--red);font-weight:800;">29:59</span>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="processChargeSYP()" id="chargeBtnSYP" style="background:linear-gradient(135deg,#2d8a4e,#1a5e35);">🧾 أنشئ فاتورة</button>
+    <button class="btn-secondary" onclick="closeModal('chargeSYPModal');showCharge()">🔙 رجوع</button>
+  </div>
+</div>
+
+<script>
+var BOT_API = "https://api.ambstore963.us/api";
+var SHAM_ADDRESS = "8940269bc88c8dbf09425b45917ec4c5";
+
+var state = {
+  userId: '',
+  userName: 'مستخدم',
+  balance: 0,
+  orders: [],
+  deposits: [],
+  senderDone: false,
+  senderName: '',
+  senderPhone: '',
+  selectedProduct: null,
+  chargeStep: 1
+};
+
+// تحميل من localStorage بما فيها userId كاحتياط
+try {
+  var s=localStorage.getItem('amb_store');
+  if(s){
+    var p=JSON.parse(s);
+    for(var k in p) state[k]=p[k];
+  }
+} catch(e){}
+
+// userId دائماً من تلغرام — يكتب فوق localStorage
+try {
+  var tg = window.Telegram && window.Telegram.WebApp;
+  if(tg) {
+    tg.ready();
+    tg.expand();
+    var user = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    if(user && user.id) {
+      state.userId = String(user.id);
+      state.userName = user.first_name || 'مستخدم';
+    }
+  }
+} catch(e){}
+
+// إذا لم يوجد userId من تلغرام نحاول من initData
+if(!state.userId) {
+  try {
+    var tg2 = window.Telegram && window.Telegram.WebApp;
+    if(tg2 && tg2.initData) {
+      var params = new URLSearchParams(tg2.initData);
+      var userStr = params.get('user');
+      if(userStr) {
+        var userObj = JSON.parse(decodeURIComponent(userStr));
+        if(userObj && userObj.id) {
+          state.userId = String(userObj.id);
+          state.userName = userObj.first_name || 'مستخدم';
+        }
+      }
+    }
+  } catch(e){}
+}
+
+function save(){ try{localStorage.setItem('amb_store',JSON.stringify(state));}catch(e){} }
+
+var categories = [
+  {id:'all',name:'الكل',icon:'🛒',img:''},
+  {id:'games',name:'الألعاب',icon:'🎮',img:''},
+  {id:'whatsapp',name:'واتساب',icon:'📱',img:''},
+  {id:'social',name:'سوشل ميديا',icon:'📢',img:''},
+  {id:'subscriptions',name:'اشتراكات',icon:'📺',img:''},
+  {id:'cards',name:'بطاقات',icon:'🎁',img:''},
+  {id:'telegram',name:'تليجرام',icon:'✈️',img:''},
+  {id:'other',name:'أخرى',icon:'⚡',img:''}
+];
+
+var products = [
+  {id:1,cat:'games',name:'PUBG Mobile',icon:'🎯',img:'',desc:'شحن UC ببجي موبايل',inputType:'id',inputLabel:'Player ID',
+   packages:[{name:'60 UC',price:1.20},{name:'325 UC',price:5.50},{name:'660 UC',price:10.50},{name:'1800 UC',price:27.00}]},
+  {id:2,cat:'games',name:'Free Fire',icon:'🔥',img:'',desc:'شحن جواهر فري فاير',inputType:'id',inputLabel:'Player ID',
+   packages:[{name:'100 جوهرة',price:1.00},{name:'310 جوهرة',price:3.00},{name:'520 جوهرة',price:5.00}]},
+  {id:3,cat:'games',name:'Mobile Legends',icon:'⚔️',img:'',desc:'شحن الماس موبايل ليجند',inputType:'id',inputLabel:'Player ID + Zone',
+   packages:[{name:'86 الماسة',price:1.00},{name:'257 الماسة',price:3.00},{name:'706 الماسة',price:8.00}]},
+  {id:4,cat:'whatsapp',name:'رقم واتساب تركي',icon:'🇹🇷',img:'',desc:'رقم تركي للواتساب - تفعيل فوري',inputType:'none',inputLabel:'',
+   packages:[{name:'رقم تركي',price:2.00},{name:'رقم تركي مميز',price:3.50}]},
+  {id:5,cat:'whatsapp',name:'رقم واتساب أمريكي',icon:'🇺🇸',img:'',desc:'رقم أمريكي للواتساب',inputType:'none',inputLabel:'',
+   packages:[{name:'رقم أمريكي',price:2.50}]},
+  {id:6,cat:'subscriptions',name:'Netflix',icon:'🎬',img:'',desc:'اشتراك Netflix شهري',inputType:'email',inputLabel:'إيميلك',
+   packages:[{name:'شهر',price:8.00},{name:'3 أشهر',price:22.00}]},
+  {id:7,cat:'subscriptions',name:'Spotify',icon:'🎵',img:'',desc:'Spotify Premium',inputType:'email',inputLabel:'إيميلك',
+   packages:[{name:'شهر',price:3.00},{name:'3 أشهر',price:8.00}]},
+  {id:8,cat:'social',name:'متابعين إنستغرام',icon:'📸',img:'',desc:'متابعين حقيقيين',inputType:'link',inputLabel:'رابط حسابك',
+   packages:[{name:'500 متابع',price:3.00},{name:'1000 متابع',price:5.50}]},
+  {id:9,cat:'cards',name:'Google Play',icon:'🎮',img:'',desc:'بطاقة Google Play',inputType:'none',inputLabel:'',
+   packages:[{name:'$5',price:5.50},{name:'$10',price:10.50},{name:'$25',price:26.00}]}
+];
+
+var currentCat = 'all';
+
+
+function init(){
+  // إعادة تعيين الرصيد لـ 0 حتى يُجلب من السيرفر
+  if(state.userId) {
+    document.getElementById('balanceAmt').textContent = '...';
+    document.getElementById('profileBalance').textContent = '...';
+  }
+  document.getElementById('userId').textContent = state.userId || '—';
+  document.getElementById('userName').textContent = state.userName;
+  document.getElementById('profileName').textContent = state.userName;
+  document.getElementById('profileId').textContent = state.userId || '—';
+  renderCats();
+  renderProducts();
+  renderOrders();
+  renderDeposits();
+  fetchFromServer();
+}
+
+function fetchFromServer(){
+  if(!state.userId) return;
+  fetch(BOT_API+'/config?uid='+state.userId)
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.maintenance){
+        document.body.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#0D0D12;color:#fff;font-family:'Tajawal',sans-serif;text-align:center;padding:20px;">
+            <div style="font-size:64px;margin-bottom:20px;">🔧</div>
+            <div style="font-size:22px;font-weight:900;margin-bottom:10px;">المتجر في صيانة</div>
+            <div style="font-size:14px;color:#8888AA;">سنعود قريباً! ⏳</div>
+          </div>`;
+        return;
+      }
+      // دائماً نأخذ الرصيد من السيرفر بناءً على userId
+      if(d.balance!==undefined) state.balance=d.balance;
+      if(d.products) products=d.products;
+      if(d.categories) categories=d.categories;
+      if(d.deposits) state.deposits=d.deposits;
+      if(d.exchangeRate) state.exchangeRate=d.exchangeRate;
+      save(); init();
+    }).catch(function(){});
+}
+
+function renderImg(img,icon,size){
+  if(img) return '<img src="'+img+'" style="width:'+size+'px;height:'+size+'px;object-fit:cover;border-radius:'+(size/4)+'px;" onerror="this.style.display=\'none\'">';
+  return '<span style="font-size:'+(size*0.5)+'px;">'+icon+'</span>';
+}
+
+function renderCats(){
+  var html='';
+  categories.forEach(function(c){
+    html+='<div class="cat-card '+(currentCat===c.id?'active':'')+'" onclick="filterCat(\''+c.id+'\')">';
+    html+='<div class="cat-img">'+renderImg(c.img,c.icon,44)+'</div>';
+    html+='<div class="cat-name">'+c.name+'</div></div>';
+  });
+  document.getElementById('catsGrid').innerHTML=html;
+}
+
+function renderProducts(filter){
+  var list=products;
+  if(currentCat!=='all') list=products.filter(function(p){return p.cat===currentCat;});
+  if(filter) list=list.filter(function(p){return p.name.includes(filter)||p.desc.includes(filter);});
+  var html='';
+  if(!list.length){
+    html='<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">لا يوجد منتجات</div></div>';
+  } else {
+    list.forEach(function(p){
+      var minP=Math.min.apply(null,p.packages.map(function(x){return x.price;}));
+      html+='<div class="product-card" onclick="openProduct('+p.id+')">';
+      html+='<div class="product-img">'+renderImg(p.img,p.icon,54)+'</div>';
+      html+='<div class="product-info"><div class="product-name">'+p.name+'</div><div class="product-desc">'+p.desc+'</div></div>';
+      html+='<div class="product-price"><div class="price-from">يبدأ من</div><div class="price-amount">$'+minP.toFixed(2)+'</div></div>';
+      html+='</div>';
+    });
+  }
+  document.getElementById('productsGrid').innerHTML=html;
+}
+
+function filterCat(cat){
+  currentCat=cat;
+  var c=categories.find(function(x){return x.id===cat;});
+  document.getElementById('productsTitle').textContent=cat==='all'?'🔥 جميع المنتجات':(c?c.icon+' '+c.name:'');
+  renderCats(); renderProducts();
+}
+
+function searchProducts(){
+  var q=document.getElementById('searchInput').value.trim();
+  renderProducts(q||null);
+}
+
+function openProduct(id){
+  var p=products.find(function(x){return x.id===id;});
+  if(!p) return;
+  state.selectedProduct=p; selectedPkgIdx=-1;
+  var imgEl=document.getElementById('modalImg');
+  if(p.img) imgEl.innerHTML='<img src="'+p.img+'" style="width:100%;height:100%;object-fit:cover;">';
+  else imgEl.innerHTML='<span style="font-size:60px;">'+p.icon+'</span>';
+  document.getElementById('modalName').textContent=p.name;
+  document.getElementById('modalDesc').textContent=p.desc;
+  var pkgHtml='';
+  p.packages.forEach(function(pkg,i){
+    pkgHtml+='<div class="package-item" id="pkg-'+i+'" onclick="selectPkg('+i+')">';
+    pkgHtml+='<div class="package-name">'+pkg.name+'</div>';
+    pkgHtml+='<div class="package-price">$'+pkg.price.toFixed(2)+'</div></div>';
+  });
+  document.getElementById('packagesList').innerHTML=pkgHtml;
+  var inputHtml='';
+  if(p.inputType!=='none'){
+    inputHtml='<div class="input-field"><div class="input-label">'+p.inputLabel+' *</div><input type="text" id="playerInput" placeholder="'+p.inputLabel+'" style="direction:ltr;"></div>';
+  }
+  document.getElementById('inputFields').innerHTML=inputHtml;
+  document.getElementById('productModal').classList.add('show');
+}
+
+function selectPkg(i){
+  selectedPkgIdx=i;
+  document.querySelectorAll('.package-item').forEach(function(el){el.classList.remove('selected');});
+  document.getElementById('pkg-'+i).classList.add('selected');
+}
+
+function placeOrder(){
+  if(selectedPkgIdx===-1){showToast('❌ اختر باقة أولاً',true);return;}
+  var p=state.selectedProduct;
+  var pkg=p.packages[selectedPkgIdx];
+  if(state.balance<pkg.price){showToast('❌ رصيدك غير كافٍ، يرجى شحن الرصيد',true);setTimeout(function(){closeModal('productModal');showCharge();},1500);return;}
+  var playerInput=document.getElementById('playerInput');
+  var inputVal=playerInput?playerInput.value.trim():'';
+  if(p.inputType!=='none'&&!inputVal){showToast('❌ أدخل '+p.inputLabel,true);return;}
+  var order={id:'ORD'+Date.now(),product:p.name,package:pkg.name,price:pkg.price,input:inputVal,status:'pending',date:new Date().toLocaleDateString('ar'),icon:p.icon,img:p.img||''};
+  state.orders.unshift(order);
+  state.balance-=pkg.price;
+  save();
+  fetch(BOT_API+'/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:state.userId,userName:state.userName,order:order})}).catch(function(){});
+  closeModal('productModal');
+  showToast('✅ تم إرسال طلبك!');
+  updateBalance(); renderOrders();
+}
+
+var chargeIntervalUSD = null;
+var chargeIntervalSYP = null;
+
+function showCharge(){
+  document.getElementById('chargeModal').classList.add('show');
+}
+
+function calcSYP(){
+  var amount = parseFloat(document.getElementById('chargeAmountSYP').value);
+  var rate = state.exchangeRate || 13000;
+  if(amount && amount > 0){
+    var usd = Math.round((amount / rate) * 100) / 100;
+    document.getElementById('calcResultUSD').textContent = '$' + usd.toFixed(2);
+    document.getElementById('calcResult').style.display = 'block';
+  } else {
+    document.getElementById('calcResult').style.display = 'none';
+  }
+}
+
+function openChargeUSD(){
+  if(!state.userId){
+    showToast('❌ افتح المتجر من زر 🛒 أسفل الشاشة!', true);
+    return;
+  }
+  closeModal('chargeModal');
+  document.getElementById('chargeAmountUSD').value='';
+  document.getElementById('chargeDetailsUSD').style.display='none';
+  document.getElementById('chargeBtnUSD').textContent='🧾 أنشئ فاتورة';
+  document.getElementById('chargeBtnUSD').disabled=false;
+  state.chargeStepUSD=1;
+  document.getElementById('chargeUSDModal').classList.add('show');
+}
+
+function openChargeSYP(){
+  if(!state.userId){
+    showToast('❌ افتح المتجر من زر 🛒 أسفل الشاشة!', true);
+    return;
+  }
+  closeModal('chargeModal');
+  document.getElementById('chargeAmountSYP').value='';
+  document.getElementById('chargeDetailsSYP').style.display='none';
+  document.getElementById('calcResult').style.display='none';
+  document.getElementById('chargeBtnSYP').textContent='🧾 أنشئ فاتورة';
+  document.getElementById('chargeBtnSYP').disabled=false;
+  document.getElementById('exchangeRateSYP').textContent=(state.exchangeRate||13000).toLocaleString();
+  state.chargeStepSYP=1;
+  document.getElementById('chargeSYPModal').classList.add('show');
+}
+
+function generateInvoiceId(){
+  var timestamp = Math.floor(Date.now()/1000);
+  var random = Math.floor(Math.random()*9000)+1000;
+  var uid = state.userId ? state.userId.replace('TG','') : 'GUEST';
+  return uid + 'AMB' + timestamp + random;
+}
+
+function startTimerFor(elId, interval){
+  if(interval) clearInterval(interval);
+  var sec=30*60;
+  return setInterval(function(){
+    sec--;
+    var m=Math.floor(sec/60),s=sec%60;
+    var el=document.getElementById(elId);
+    if(el) el.textContent=m+':'+(s<10?'0':'')+s;
+    if(sec<=0) clearInterval(interval);
+  },1000);
+}
+
+function processChargeUSD(){
+  var amount=parseFloat(document.getElementById('chargeAmountUSD').value);
+  if(!amount||amount<1){showToast('❌ أدخل مبلغاً صحيحاً (الحد الأدنى $1)',true);return;}
+
+  if(state.chargeStepUSD===1){
+    state.invoiceIdUSD=generateInvoiceId();
+    state.pendingAmountUSD=amount;
+    document.getElementById('chargeAmtUSDDisplay').textContent='$'+amount.toFixed(2);
+    document.getElementById('chargeNoteUSDDisplay').textContent=state.invoiceIdUSD;
+    document.getElementById('chargeDetailsUSD').style.display='block';
+    document.getElementById('chargeBtnUSD').textContent='هل حولت؟ اضغط للتحقق ✅';
+    state.chargeStepUSD=2;
+    chargeIntervalUSD=startTimerFor('chargeTimerUSD', chargeIntervalUSD);
+  } else {
+    document.getElementById('chargeBtnUSD').textContent='⏳ جاري التحقق...';
+    document.getElementById('chargeBtnUSD').disabled=true;
+
+    var oldBalance = state.balance;
+
+    // إرسال الطلب
+    fetch(BOT_API+'/verify-payment',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        userId:state.userId.replace('TG',''),
+        userName:state.userName,
+        amount:state.pendingAmountUSD,
+        currency:'USD',
+        invoiceId:state.invoiceIdUSD
+      })
+    }).then(function(r){return r.json();})
+    .then(function(d){
+      if(d.success){
+        state.balance=d.balance||state.balance;
+        save(); updateBalance();
+        if(chargeIntervalUSD) clearInterval(chargeIntervalUSD);
+        closeModal('chargeUSDModal');
+        showToast('✅ تمت إضافة $'+state.pendingAmountUSD.toFixed(2)+' إلى رصيدك بنجاح!');
+      } else {
+        showToast('❌ '+(d.error||'لم يتم العثور على العملية'),true);
+        document.getElementById('chargeBtnUSD').textContent='هل حولت؟ اضغط للتحقق ✅';
+        document.getElementById('chargeBtnUSD').disabled=false;
+      }
+    }).catch(function(){
+      // انتظر وتحقق من الرصيد
+      var attempts = 0;
+      var pollInterval = setInterval(function(){
+        attempts++;
+        fetch(BOT_API+'/config?uid='+state.userId.replace('TG',''))
+          .then(function(r){return r.json();})
+          .then(function(d){
+            if(d.balance && d.balance > oldBalance){
+              clearInterval(pollInterval);
+              state.balance=d.balance;
+              save(); updateBalance();
+              if(chargeIntervalUSD) clearInterval(chargeIntervalUSD);
+              closeModal('chargeUSDModal');
+              showToast('✅ تمت إضافة الرصيد إلى حسابك بنجاح!');
+            } else if(attempts >= 12){
+              clearInterval(pollInterval);
+              showToast('❌ لم يتم التحقق، تحقق من الملاحظة والمبلغ',true);
+              document.getElementById('chargeBtnUSD').textContent='هل حولت؟ اضغط للتحقق ✅';
+              document.getElementById('chargeBtnUSD').disabled=false;
+            }
+          }).catch(function(){
+            if(attempts >= 12){
+              clearInterval(pollInterval);
+              document.getElementById('chargeBtnUSD').textContent='هل حولت؟ اضغط للتحقق ✅';
+              document.getElementById('chargeBtnUSD').disabled=false;
+            }
+          });
+      }, 5000);
+    });
+  }
+}
+
+function processChargeSYP(){
+  var amount=parseFloat(document.getElementById('chargeAmountSYP').value);
+  if(!amount||amount<1000){showToast('❌ أدخل مبلغاً (الحد الأدنى 1000 ل.س)',true);return;}
+  var rate=state.exchangeRate||13000;
+  var amountUSD=Math.round((amount/rate)*100)/100;
+
+  if(state.chargeStepSYP===1){
+    state.invoiceIdSYP=generateInvoiceId();
+    state.pendingAmountSYP=amount;
+    state.pendingAmountSYPinUSD=amountUSD;
+    document.getElementById('chargeAmtSYPDisplay').textContent=amount.toLocaleString()+' ل.س';
+    document.getElementById('chargeAmtUSDEquiv').textContent='$'+amountUSD.toFixed(2);
+    document.getElementById('chargeNoteSYPDisplay').textContent=state.invoiceIdSYP;
+    document.getElementById('chargeDetailsSYP').style.display='block';
+    document.getElementById('chargeBtnSYP').textContent='هل حولت؟ اضغط للتحقق ✅';
+    state.chargeStepSYP=2;
+    chargeIntervalSYP=startTimerFor('chargeTimerSYP', chargeIntervalSYP);
+  } else {
+    document.getElementById('chargeBtnSYP').textContent='⏳ جاري التحقق...';
+    document.getElementById('chargeBtnSYP').disabled=true;
+    fetch(BOT_API+'/verify-payment',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        userId:state.userId.replace('TG',''),
+        userName:state.userName,
+        amount:state.pendingAmountSYP,
+        currency:'SYP',
+        invoiceId:state.invoiceIdSYP
+      })
+    }).then(function(r){return r.json();})
+    .then(function(d){
+      if(d.success){
+        state.balance=d.balance||state.balance;
+        save(); updateBalance();
+        if(chargeIntervalSYP) clearInterval(chargeIntervalSYP);
+        closeModal('chargeSYPModal');
+        showToast('✅ تمت إضافة $'+state.pendingAmountSYPinUSD.toFixed(2)+' إلى رصيدك بنجاح!');
+      } else {
+        showToast('❌ '+(d.error||'لم يتم العثور على العملية'),true);
+        document.getElementById('chargeBtnSYP').textContent='هل حولت؟ اضغط للتحقق ✅';
+        document.getElementById('chargeBtnSYP').disabled=false;
+      }
+    }).catch(function(){
+      fetch(BOT_API+'/config?uid='+state.userId.replace('TG',''))
+        .then(function(r){return r.json();})
+        .then(function(d){
+          if(d.balance && d.balance > state.balance){
+            state.balance=d.balance;
+            save(); updateBalance();
+            if(chargeIntervalSYP) clearInterval(chargeIntervalSYP);
+            closeModal('chargeSYPModal');
+            showToast('✅ تمت إضافة الرصيد إلى حسابك بنجاح!');
+          } else {
+            showToast('❌ خطأ في الاتصال',true);
+            document.getElementById('chargeBtnSYP').textContent='هل حولت؟ اضغط للتحقق ✅';
+            document.getElementById('chargeBtnSYP').disabled=false;
+          }
+        }).catch(function(){
+          showToast('❌ خطأ في الاتصال',true);
+          document.getElementById('chargeBtnSYP').textContent='هل حولت؟ اضغط للتحقق ✅';
+          document.getElementById('chargeBtnSYP').disabled=false;
+        });
+    });
+  }
+}
+  state.chargeStep=1;
+  selectedCurrency='USD';
+  // إعادة تعيين أزرار العملة
+
+
+
+
+function submitSenderInfo(){
+  var name=document.getElementById('senderName').value.trim();
+  var phone=document.getElementById('senderPhone').value.trim();
+  if(!name){showToast('❌ أدخل الاسم على شام كاش',true);return;}
+  if(!phone){showToast('❌ أدخل رقم الهاتف',true);return;}
+  state.senderDone=true;
+  state.senderName=name;
+  state.senderPhone=phone;
+  save();
+  closeModal('senderModal');
+  showToast('✅ تم حفظ البيانات!');
+  setTimeout(function(){showCharge();},600);
+}
+
+function startTimer(){
+  var sec=30*60;
+  if(chargeInterval) clearInterval(chargeInterval);
+  chargeInterval=setInterval(function(){
+    sec--;
+    var m=Math.floor(sec/60),s=sec%60;
+    var el=document.getElementById('chargeTimer');
+    if(el) el.textContent=m+':'+(s<10?'0':'')+s;
+    if(sec<=0){clearInterval(chargeInterval);closeModal('chargeModal');}
+  },1000);
+}
+
+function renderOrders(){
+  var html='';
+  if(!state.orders.length){
+    html='<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">لا يوجد طلبات بعد</div></div>';
+  } else {
+    state.orders.forEach(function(o){
+      var sc=o.status==='done'?'status-done':(o.status==='cancelled'?'status-cancelled':'status-pending');
+      var st=o.status==='done'?'✅ مكتمل':(o.status==='cancelled'?'❌ ملغي':'⏳ قيد التنفيذ');
+      html+='<div class="order-card">';
+      html+='<div class="order-header"><div class="order-id">'+o.id+'</div><span class="order-status '+sc+'">'+st+'</span></div>';
+      html+='<div style="font-size:14px;font-weight:800;margin-bottom:4px;">'+o.icon+' '+o.product+' — '+o.package+'</div>';
+      html+='<div style="font-size:12px;color:var(--text2);">💰 $'+o.price.toFixed(2)+' | 📅 '+o.date+(o.input?' | '+o.input:'')+'</div>';
+      html+='</div>';
+    });
+  }
+  document.getElementById('ordersList').innerHTML=html;
+}
+
+function renderDeposits(){
+  var html='';
+  if(!state.deposits.length){
+    html='<div class="empty-state"><div class="empty-icon">💳</div><div class="empty-text">لا يوجد إيداعات بعد</div></div>';
+  } else {
+    state.deposits.forEach(function(d){
+      var sc=d.status==='confirmed'?'status-done':(d.status==='rejected'?'status-cancelled':'status-pending');
+      var st=d.status==='confirmed'?'✅ مؤكد':(d.status==='rejected'?'❌ مرفوض':'⏳ قيد المراجعة');
+      html+='<div class="deposit-card">';
+      html+='<div class="deposit-header"><div class="deposit-amount">+$'+d.amount.toFixed(2)+'</div><span class="deposit-status '+sc+'">'+st+'</span></div>';
+      html+='<div style="font-size:12px;color:var(--text2);margin-bottom:3px;">🔢 رقم العملية: '+d.txId+'</div>';
+      html+='<div style="font-size:12px;color:var(--text2);margin-bottom:3px;">📛 الاسم: '+d.senderName+'</div>';
+      html+='<div style="font-size:12px;color:var(--text2);">📅 '+d.date+'</div>';
+      html+='</div>';
+    });
+  }
+  document.getElementById('depositsList').innerHTML=html;
+}
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  window.scrollTo(0,0);
+  if(name==='orders') renderOrders();
+  if(name==='deposits') renderDeposits();
+}
+
+function closeModal(id){
+  document.getElementById(id).classList.remove('show');
+  if(id==='chargeUSDModal' && chargeIntervalUSD) clearInterval(chargeIntervalUSD);
+  if(id==='chargeSYPModal' && chargeIntervalSYP) clearInterval(chargeIntervalSYP);
+}
+
+function updateBalance(){
+  document.getElementById('balanceAmt').textContent=state.balance.toFixed(2);
+  document.getElementById('profileBalance').textContent=state.balance.toFixed(2);
+}
+
+function copyText(text){
+  try{navigator.clipboard.writeText(text);}catch(e){
+    var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+  }
+  showToast('✅ تم النسخ!');
+}
+
+function contactSupport(){
+  window.open('https://t.me/AMBsy963','_blank');
+}
+
+function showToast(msg,isError){
+  var t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.background=isError?'var(--red)':'var(--green)';
+  t.style.color=isError?'#fff':'#000';
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},isError?2500:4000);
+}
+
+init();
+
+// تحديث الرصيد تلقائياً كل 30 ثانية
+setInterval(function(){
+  fetch(BOT_API+'/config?uid='+state.userId)
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.maintenance){return;}
+      if(d.balance!==undefined && d.balance!==state.balance){
+        state.balance=d.balance;
+        save();
+        updateBalance();
+        showToast('💰 تم تحديث رصيدك: $'+d.balance.toFixed(2));
+      }
+    }).catch(function(){});
+}, 30000);
+</script>
+</body>
+</html>
