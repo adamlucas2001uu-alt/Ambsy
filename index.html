@@ -40,8 +40,8 @@ body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--text);min
 .section{margin:14px 16px 0;}
 .section-title{font-size:15px;font-weight:800;margin-bottom:10px;}
 
-.cats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-.cat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:10px 6px;text-align:center;cursor:pointer;transition:all 0.2s;}
+.cats-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;}
+.cat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:10px 6px;text-align:center;cursor:pointer;transition:all 0.2s;min-width:80px;flex-shrink:0;scroll-snap-align:start;}
 .cat-card:active{transform:scale(0.95);}
 .cat-card.active{border-color:var(--blue);background:rgba(59,127,255,0.1);}
 .cat-img{width:44px;height:44px;border-radius:10px;object-fit:cover;margin:0 auto 6px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:24px;}
@@ -399,18 +399,7 @@ var state = {
   exchangeRate: 0
 };
 
-// تحميل من localStorage لكن ليس exchangeRate لأنه يجلب دائماً من السيرفر
-try {
-  var s=localStorage.getItem('amb_store');
-  if(s){
-    var p=JSON.parse(s);
-    for(var k in p){
-      if(k !== 'exchangeRate') state[k]=p[k];
-    }
-  }
-} catch(e){}
-
-// userId دائماً من تلغرام — يكتب فوق localStorage
+// userId دائماً من تلغرام أولاً
 try {
   var tg = window.Telegram && window.Telegram.WebApp;
   if(tg) {
@@ -442,20 +431,30 @@ if(!state.userId) {
   } catch(e){}
 }
 
-// آخر محاولة - من URL مباشرة (عند الفتح من زر /start)
+// آخر محاولة - من URL مباشرة
 if(!state.userId) {
   try {
     var urlParams = new URLSearchParams(window.location.search);
     var uidFromUrl = urlParams.get('uid');
-    if(uidFromUrl) {
-      state.userId = String(uidFromUrl);
-    }
+    if(uidFromUrl) state.userId = String(uidFromUrl);
   } catch(e){}
 }
 
+// تحميل من localStorage بمفتاح خاص بكل مستخدم
+var storageKey = state.userId ? 'amb_store_' + state.userId : 'amb_store';
+try {
+  var s = localStorage.getItem(storageKey);
+  if(s){
+    var p = JSON.parse(s);
+    for(var k in p){
+      if(k !== 'exchangeRate' && k !== 'userId') state[k] = p[k];
+    }
+  }
+} catch(e){}
+
 function save(){
   try{
-    localStorage.setItem('amb_store', JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
   }catch(e){}
 }
 
@@ -494,7 +493,7 @@ function fetchFromServer(){
     .then(function(r){return r.json();})
     .then(function(d){
       if(d.banned){document.body.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#0D0D12;color:#fff;font-family:Tajawal,sans-serif;text-align:center;padding:20px;"><div style="font-size:64px;margin-bottom:20px;">🚫</div><div style="font-size:22px;font-weight:900;margin-bottom:10px;">تم حذف حسابك</div><div style="font-size:14px;color:#8888AA;">للاستفسار تواصل مع الدعم</div></div>`;return;}
-      if(d.maintenance){
+      if(d.maintenance && !d.isAdmin){
         document.body.innerHTML = `
           <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#0D0D12;color:#fff;font-family:'Tajawal',sans-serif;text-align:center;padding:20px;">
             <div style="font-size:64px;margin-bottom:20px;">🔧</div>
@@ -956,7 +955,7 @@ setInterval(function(){
   fetch(BOT_API+'/config?uid='+state.userId.replace('TG','')+'&name='+encodeURIComponent(state.userName))
     .then(function(r){return r.json();})
     .then(function(d){
-      if(d.maintenance){return;}
+      if(d.maintenance && !d.isAdmin){return;}
       if(d.balance!==undefined && d.balance!==state.balance){
         state.balance=d.balance;
         save();
