@@ -759,28 +759,8 @@ function openChargeSYP(){
   document.getElementById('chargeBtnSYP').textContent='🧾 إنشاء فاتورة جديدة';
   document.getElementById('chargeBtnSYP').disabled=false;
   state.chargeStepSYP=1;
-
-  // فتح النافذة فوراً
   document.getElementById('chargeSYPModal').classList.add('show');
-
-  // إذا السعر موجود اعرضه فوراً
-  if(state.exchangeRate && state.exchangeRate > 0){
-    document.getElementById('exchangeRateSYP').textContent = state.exchangeRate.toLocaleString();
-  } else {
-    // اجلب السعر من السيرفر في الخلفية
-    document.getElementById('exchangeRateSYP').textContent = '...';
-    fetch(buildApiUrl('/config',{uid:state.userId.replace('TG','')}), {cache:'no-store'})
-      .then(function(r){return r.json();})
-      .then(function(d){
-        if(d.exchangeRate){
-          state.exchangeRate = parseFloat(d.exchangeRate);
-          document.getElementById('exchangeRateSYP').textContent = state.exchangeRate.toLocaleString();
-        }
-      }).catch(function(){
-        document.getElementById('exchangeRateSYP').textContent = '130';
-        state.exchangeRate = 130;
-      });
-  }
+  refreshExchangeRate(true);
 }
 
 function generateInvoiceId(){
@@ -1006,17 +986,13 @@ function submitVerificationInfo(){
     verifyBtn.textContent='⏳ جارِ التحقق... انتظر ثواني';
   }
 
-  fetch(BOT_API+'/verify-identity',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      userId:state.userId.replace('TG',''),
-      userName:state.userName,
-      name:name,
-      address:address
-    })
-  }).then(function(r){return r.json();})
-  .then(function(d){
+  postJsonWithTimeout(BOT_API+'/verify-identity',{
+    userId:state.userId.replace('TG',''),
+    userName:state.userName,
+    name:name,
+    address:address
+  }, 120000).then(function(res){
+    var d = res.data || {};
     if(d.success && d.verified){
       state.verified = true;
       state.verifiedName = d.verifiedName || name;
@@ -1027,10 +1003,16 @@ function submitVerificationInfo(){
       showToast('✅ تم توثيق حساب شام كاش بنجاح');
       setTimeout(function(){showCharge();}, 500);
     } else {
-      showToast('❌ '+(d.error||'فشل توثيق الحساب'), true);
+      showToast('❌ '+(d.error||d.message||'فشل توثيق الحساب'), true);
     }
-  }).catch(function(){
-    showToast('❌ تعذر الاتصال بخدمة التوثيق', true);
+  }).catch(function(e){
+    if(e && e.data && (e.data.error || e.data.message)){
+      showToast('❌ '+(e.data.error||e.data.message), true);
+    } else if(e && e.name === 'AbortError'){
+      showToast('❌ انتهت مهلة التوثيق. أعد المحاولة بعد قليل.', true);
+    } else {
+      showToast('❌ تعذر الاتصال بخدمة التوثيق', true);
+    }
   }).finally(function(){
     if(verifyBtn){
       verifyBtn.disabled=false;
@@ -1138,6 +1120,13 @@ setInterval(function(){
     .then(function(r){return r.json();})
     .then(function(d){
       if(d.maintenance && !d.isAdmin){return;}
+      if(d.exchangeRate){
+        state.exchangeRate = parseFloat(d.exchangeRate);
+        save();
+        var rateEl = document.getElementById('exchangeRateSYP');
+        if(rateEl) rateEl.textContent = state.exchangeRate.toLocaleString();
+        calcSYP();
+      }
       if(d.balance!==undefined && d.balance!==state.balance){
         state.balance=d.balance;
         save();
